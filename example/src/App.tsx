@@ -1,5 +1,6 @@
 import { IonApp, IonButton, setupIonicReact } from '@ionic/react';
-import { CameraConfig, KlippaScannerSDK } from '@klippa/capacitor-klippa-scanner-sdk'
+
+import { KlippaScannerSDK } from "@klippa/capacitor-klippa-scanner-sdk"
 import { KlippaScannerConfig } from './klippa-config'
 
 
@@ -39,7 +40,7 @@ const App: React.FC = () => (
     <IonApp>
         <IonButton onClick={
             () => _startScanner()}>
-            Start scanner!!!
+            Start scanner
         </IonButton>
     </IonApp>
 );

@@ -223,5 +223,5 @@ export interface KlippaScannerSDKPlugin {
 
 const KlippaScannerSDK = registerPlugin<KlippaScannerSDKPlugin>('KlippaScannerSDKPlugin')
 
-export default { KlippaScannerSDK }
+export { KlippaScannerSDK }
 
