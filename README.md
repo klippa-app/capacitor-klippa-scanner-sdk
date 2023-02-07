@@ -1,7 +1,7 @@
 [![Npm version][npm-version]][npm-url]
 
 [npm-version]:https://img.shields.io/npm/v/@klippa/capacitor-klippa-scanner-sdk.svg
-[npm-url]:https://www.npmjs.com/package/@klippa/capacitor-klippa-identity-verification-sdk
+[npm-url]:https://www.npmjs.com/package/@klippa/capacitor-klippa-scanner-sdk
 
 # capacitor-klippa-scanner-sdk
 
