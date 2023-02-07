@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="klippa_scanner_sdk_color_Primary">#2dc36a</color>
+    <color name="klippa_scanner_sdk_color_PrimaryDark">#308D53</color>
+    <color name="klippa_scanner_sdk_color_Accent">#2dc36a</color>
+    <color name="klippa_scanner_sdk_color_Overlay">#2dc36a</color>
+    <color name="klippa_scanner_sdk_color_Warning">#BFFF0000</color>
+    <color name="klippa_scanner_sdk_color_IconDisabledColor">#80FFFFFF</color>
+    <color name="klippa_scanner_sdk_color_IconEnabledColor">#FFFFFFFF</color>
+    <color name="klippa_scanner_sdk_color_ReviewIconColor">#FFFFFFFF</color>
+</resources>

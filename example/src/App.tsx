@@ -1,4 +1,4 @@
-import { IonApp, IonButton, setupIonicReact } from '@ionic/react';
+import { IonApp, IonButton, setupIonicReact, useIonAlert } from '@ionic/react';
 
 import { KlippaScannerSDK } from "@klippa/capacitor-klippa-scanner-sdk"
 import { KlippaScannerConfig } from './klippa-config'
@@ -27,22 +27,27 @@ import React from 'react';
 
 setupIonicReact();
 
-
-function _startScanner() {
-
-    KlippaScannerSDK.getCameraResult(KlippaScannerConfig).then((result) => {
-        console.log(result);
-    })
-
-}
-
-const App: React.FC = () => (
-    <IonApp>
+const App: React.FC = () => {
+    const [present] = useIonAlert();
+    return <IonApp>
         <IonButton onClick={
-            () => _startScanner()}>
+            () => {
+                KlippaScannerSDK.getCameraResult(KlippaScannerConfig).then((result) => {
+                    console.log(result);
+
+                    console.log(result.images.length);
+                    console.log(result.images);
+
+                    present({
+                        header: 'Alert',
+                        message: `Took ${result.images.length} pictures`,
+                        buttons: ['Ok'],
+                    })
+                })
+            }}>
             Start scanner
         </IonButton>
     </IonApp>
-);
+};
 
 export default App;
