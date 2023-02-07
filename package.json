@@ -11,7 +11,7 @@
     "android/build.gradle",
     "dist/",
     "ios/Plugin/",
-    "CapacitorKlippaScannerSdk.podspec"
+    "KlippaCapacitorKlippaScannerSdk.podspec"
   ],
   "author": "Robin Farmer",
   "license": "MIT",
