@@ -62,7 +62,7 @@ Edit the file `ios/{project-name}/Info.plist` and add the `NSCameraUsageDescript
 ## Ionic
 
 ```bash
-npm install capacitor-klippa-scanner-sdk
+npm install @klippa/capacitor-klippa-scanner-sdk
 npx cap sync
 ```
 Don't forget to run `pod install` in the ios folder when running the iOS app.
