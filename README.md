@@ -76,7 +76,7 @@ import { KlippaScannerSDK } from "@klippa/capacitor-klippa-scanner-sdk"
 // KlippaScanner configuration
 const KlippaScannerConfig: CameraConfig = {
     // Required
-    license: "your-license"
+    license: "your-license",
 
     // Optional.
     // Whether to show the icon to enable "multi-document-mode"
