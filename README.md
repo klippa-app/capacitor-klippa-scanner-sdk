@@ -63,7 +63,7 @@ Edit the file `ios/{project-name}/Info.plist` and add the `NSCameraUsageDescript
 
 ```bash
 npm install @klippa/capacitor-klippa-scanner-sdk
-npx cap sync
+capacitor update
 ```
 Don't forget to run `pod install` in the ios folder when running the iOS app.
 
