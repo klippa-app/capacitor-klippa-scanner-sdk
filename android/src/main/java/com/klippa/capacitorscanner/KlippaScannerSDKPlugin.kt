@@ -250,7 +250,7 @@ class KlippaScannerSDKPlugin : Plugin() {
             val images: MutableList<Map<String, String>> = mutableListOf()
 
             for (image in receivedImages) {
-                val imageDict = mapOf("Filepath" to image.filePath)
+                val imageDict = mapOf("filePath" to image.filePath)
                 images.add(imageDict)
             }
 
