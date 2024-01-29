@@ -317,7 +317,7 @@ android {
 
 - Clone the project
 - Run `npm install` in both `root` and `example` folders.
-- Run `npm run build` in both `root` and `example folders`.
+- Run `npm run build` in both `root` and `example` folders.
 - Run `npx cap sync` in example folder.
 - Run `npx cap run ios` or `npx cap run android` for whichever OS you want to run on.
 
