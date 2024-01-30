@@ -185,7 +185,7 @@ public class KlippaScannerSDKPlugin: CAPPlugin {
             builder.klippaButtonTexts.imageColorOriginalText = imageColorOriginalText
         }
 
-        if let imageColorGrayscaleText = config["imageColorGrayscaleText"] as? String {
+        if let imageColorGrayscaleText = config["imageColorGrayScaleText"] as? String {
             builder.klippaButtonTexts.imageColorGrayscaleText = imageColorGrayscaleText
         }
 

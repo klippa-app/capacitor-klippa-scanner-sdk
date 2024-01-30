@@ -155,7 +155,7 @@ export interface CameraConfig {
     imageColorOriginalText?: string
 
     // The text inside of the color selection alert dialog button named grayscale.
-    imageColorGrayscaleText?: string
+    imageColorGrayScaleText?: string
 
     // The text inside of the color selection alert dialog button named enhanced.
     imageColorEnhancedText?: string

@@ -6,6 +6,7 @@
 - Removed `defaultMultipleDocuments`.
 - Added `DocumentMode`.
 - Added `cameraModeSingle`, `cameraModeMulti`, `cameraModeSegmented` which are all of type `DocumentMode`.
+- Fixed typo `imageColorGrayscaleText` becomes `imageColorGrayScaleText`.
 
 ## 0.0.2
 
