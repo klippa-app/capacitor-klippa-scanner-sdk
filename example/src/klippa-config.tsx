@@ -4,11 +4,6 @@ export const KlippaScannerConfig: CameraConfig = {
     license: "your-license",
 
     // Optional.
-    // Whether to show the icon to enable "multi-document-mode"
-    allowMultipleDocuments: false,
-
-    // Whether the "multi-document-mode" should be enabled by default.
-    defaultMultipleDocuments: false,
 
     // Ability to disable/hide the shutter button (only works when a model is supplied as well).
     shutterButton: { allowShutterButton: true, hideShutterButton: false },
@@ -33,6 +28,13 @@ export const KlippaScannerConfig: CameraConfig = {
 
     cancelAndDeleteImagesButtonText: "Delete images",
 
+    cameraModeSingle: { name: "Single", message: "Instructions" },
+
+    cameraModeMulti: { name: "Multi", message: "Instructions" },
+
+    cameraModeSegmented: { name: "Segmented", message: "Instructions" },
+
+    startingIndex: 0,
 
     // Optional. Only affects Android.
 

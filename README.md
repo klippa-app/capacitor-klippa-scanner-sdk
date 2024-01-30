@@ -94,6 +94,16 @@ const KlippaScannerConfig: CameraConfig = {
 
     cancelAndDeleteImagesButtonText: "Delete images",
 
+    // The camera mode for scanning one part documents.
+    cameraModeSingle: { name: "Single", message: "Instructions" },
+
+    // The camera mode for scanning documents that consist of multiple pages.
+    cameraModeMulti: { name: "Multi", message: "Instructions" },
+
+    // The camera mode for scanning long documents in separate parts.
+    cameraModeSegmented: { name: "Segmented", message: "Instructions" },
+
+    startingIndex: 0,
 
     // Optional. Only affects Android.
 
@@ -285,7 +295,7 @@ Add or edit the file `android/app/src/main/res/values/strings.xml`, add the foll
 
 ### iOS
 
-Use the following properties in the config when running `getCameraResult`: `imageTooBrightMessage`, `imageTooDarkMessage`, `deleteButtonText`, `retakeButtonText`, `cancelButtonText`, `cancelAndDeleteImagesButtonText`, `cancelConfirmationMessage`, `moveCloserMessage`, `imageMovingMessage`, `imageLimitReachedMessage`, `orientationWarningMessage`, `imageColorOriginalText`, `imageColorGrayscaleText`, `imageColorEnhancedText`.
+Use the following properties in the config when running `getCameraResult`: `imageTooBrightMessage`, `imageTooDarkMessage`, `deleteButtonText`, `retakeButtonText`, `cancelButtonText`, `cancelAndDeleteImagesButtonText`, `cancelConfirmationMessage`, `moveCloserMessage`, `imageMovingMessage`, `imageLimitReachedMessage`, `orientationWarningMessage`, `imageColorOriginalText`, `imageColorGrayScaleText`, `imageColorEnhancedText`.
 
 ## Important iOS notes
 Older iOS versions do not ship the Swift libraries. To make sure the SDK works on older iOS versions, you can configure the build to embed the Swift libraries using the build setting `EMBEDDED_CONTENT_CONTAINS_SWIFT = YES`.
@@ -302,6 +312,17 @@ android {
     }
 }
 ```
+
+### Using the Example App
+
+- Clone the project
+- Run `npm install` in both `root` and `example` folders.
+- Run `npm run build` in both `root` and `example` folders.
+- Run `npx cap sync` in example folder.
+- Run `npx cap run ios` or `npx cap run android` for whichever OS you want to run on.
+
+Note: You will need to add your own Klippa username and password to the `Podfile` and `build.gradle` to pull the dependencies correctly.
+You might also need to run `pod install` in example/ios/App/ folder.
 
 ## About Klippa
 

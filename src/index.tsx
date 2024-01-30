@@ -37,17 +37,18 @@ export interface ShutterButton {
     hideShutterButton: boolean
 }
 
+export interface DocumentMode {
+    // Localized document mode name shown to user.
+    name?: string
+    // Instructions show to user, if null is passed no instructions will be shown.
+    message?: string
+}
+
 export interface CameraConfig {
     // Global options.
 
     // The license as given by Klippa.
     license: string
-
-    // Whether to show the icon to enable "multi-document-mode"
-    allowMultipleDocuments?: boolean
-
-    // Whether the "multi-document-mode" should be enabled by default.
-    defaultMultipleDocuments?: boolean
 
     // Whether the crop mode (auto edge detection) should be enabled by default.
     defaultCrop?: boolean
@@ -116,6 +117,18 @@ export interface CameraConfig {
     // What the default color conversion will be (original, grayscale, enhanced).
     defaultColor?: 'original' | 'grayscale' | 'enhanced'
 
+    // The camera mode for scanning single documents.
+    cameraModeSingle?: DocumentMode;
+
+    // The camera mode for scanning documents that consist of multiple pages.
+    cameraModeMulti?: DocumentMode;
+
+    // The camera mode for scanning long documents in separate parts that are later stitched together.
+    cameraModeSegmented?: DocumentMode;
+
+    // The index of which camera mode be shown first, (i.e 0 is first camera mode.)
+    startingIndex?: number;
+
     // Android options.
 
     // Where to put the image results.
@@ -142,7 +155,7 @@ export interface CameraConfig {
     imageColorOriginalText?: string
 
     // The text inside of the color selection alert dialog button named grayscale.
-    imageColorGrayscaleText?: string
+    imageColorGrayScaleText?: string
 
     // The text inside of the color selection alert dialog button named enhanced.
     imageColorEnhancedText?: string

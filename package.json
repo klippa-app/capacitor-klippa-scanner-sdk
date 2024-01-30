@@ -1,6 +1,6 @@
 {
   "name": "@klippa/capacitor-klippa-scanner-sdk",
-  "version": "0.0.2",
+  "version": "0.1.0",
   "description": "A Capacitor plugin for Ionic to use the Klippa Scanner SDK",
   "main": "dist/plugin.cjs.js",
   "module": "dist/esm/index.js",
