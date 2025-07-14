@@ -3,22 +3,20 @@
 [npm-version]:https://img.shields.io/npm/v/@klippa/capacitor-klippa-scanner-sdk.svg
 [npm-url]:https://www.npmjs.com/package/@klippa/capacitor-klippa-scanner-sdk
 
-# capacitor-klippa-scanner-sdk
-
-## SDK License
+### SDK License
 Please be aware you need to have a license to use this SDK.
 If you would like to use our scanner, please contact us [here](https://www.klippa.com/en/contact-en/)
 
-## Getting started
-### Android
+### Getting started
+#### Android
 Edit the file `android/key.properties`, if it doesn't exist yet, create it. Add the SDK credentials:
-```
+```bash
 klippa.scanner.sdk.username={your-username}
 klippa.scanner.sdk.password={your-password}
 ```
 Replace the `{your-username}` and `{your-password}` values with the ones provided by Klippa.
 
-### iOS
+#### iOS
 
 Edit the file `ios/Podfile`, add the Klippa CocoaPod:
 ```ruby
@@ -45,7 +43,7 @@ Edit the file `ios/{project-name}/Info.plist` and add the `NSCameraUsageDescript
 ...
 ```
 
-## Ionic
+### Ionic
 
 ```bash
 npm install @klippa/capacitor-klippa-scanner-sdk
@@ -53,10 +51,10 @@ npx cap sync
 ```
 Don't forget to run `pod install` in the ios folder when running the iOS app.
 
-## Usage
+### Usage
 
-### Import & Configuration
-```typescript
+#### Import & Configuration
+```javascript
 import { KlippaScannerSDK } from "@klippa/capacitor-klippa-scanner-sdk"
 
 // KlippaScanner configuration
@@ -185,9 +183,9 @@ const KlippaScannerConfig: CameraConfig = {
 
 ```
 
-### Starting the scanner
+#### Starting the scanner
 The result of `KlippaScannerSDK.getCameraResult(config: CameraConfig)` is a Promise, so you can get the result with:
-```typescript
+```javascript
 // Call this in a method (i.e after a button press)
 KlippaScannerSDK.getCameraResult(KlippaScannerConfig).then((result) => {
     console.log(`Took ${result.images.length} pictures`);
@@ -197,7 +195,7 @@ KlippaScannerSDK.getCameraResult(KlippaScannerConfig).then((result) => {
 ```
 
 The content of the result object is:
-``` typescript
+```javascript
 {
   // Whether the MultipleDocuments option was turned on, so you can save it as default.
   "multipleDocuments": true,
@@ -222,13 +220,13 @@ The reject reason object has a code and a message, the used codes are:
  - E_CANCELED
  - E_UNKNOWN_ERROR
 
- ## How to use a specific version of the SDK?
+### Specify SDK Version
 
-### Android
+#### Android
 
 Edit the file `android/build.gradle`, add the following:
 
-```maven
+```groovy
 allprojects {
   // ... other definitions
   project.ext {
@@ -239,13 +237,13 @@ allprojects {
 
 Replace the `{version}` value with the version you want to use.
 
-### iOS
+#### iOS
 
 Edit the file `ios/Podfile`, change the pod line of `Klippa-Scanner` and replace `latest.podspec` with `{version}.podspec`, replace the `{version}` value with the version you want to use.
 
-## How to change the colors of the scanner?
+### Customize the colours
 
-### Android
+#### Android
 
 Add or edit the file `android/app/src/main/res/values/colors.xml`, add the following:
 
@@ -263,13 +261,13 @@ Add or edit the file `android/app/src/main/res/values/colors.xml`, add the follo
 </resources>
 ```
 
-### iOS
+#### iOS
 
 Use the following properties in the config when running `getCameraResult`: `primaryColor`, `accentColor`, `overlayColor`, `warningBackgroundColor`, `warningTextColor`, `overlayColorAlpha`, `iconDisabledColor`, `iconEnabledColor`,  `reviewIconColor`.
 
-## How to change the texts in the scanner?
+### Customize the texts
 
-### Android
+#### Android
 
 Use the following properties in the config when running `getCameraResult`: `deleteButtonText`, `retakeButtonText`, `cancelButtonText`, `cancelAndDeleteImagesButtonText`, `cancelConfirmationMessage`, `moveCloserMessage`, `imageMovingMessage`, `imageLimitReachedMessage`, `orientationWarningMessage`.
 
@@ -293,19 +291,19 @@ Add or edit the file `android/app/src/main/res/values/strings.xml`, add the foll
 </resources>
 ```
 
-### iOS
+#### iOS
 
 Use the following properties in the config when running `getCameraResult`: `imageTooBrightMessage`, `imageTooDarkMessage`, `deleteButtonText`, `retakeButtonText`, `cancelButtonText`, `cancelAndDeleteImagesButtonText`, `cancelConfirmationMessage`, `moveCloserMessage`, `imageMovingMessage`, `imageLimitReachedMessage`, `orientationWarningMessage`, `imageColorOriginalText`, `imageColorGrayScaleText`, `imageColorEnhancedText`.
 
-## Important iOS notes
+### Important iOS notes
 Older iOS versions do not ship the Swift libraries. To make sure the SDK works on older iOS versions, you can configure the build to embed the Swift libraries using the build setting `EMBEDDED_CONTENT_CONTAINS_SWIFT = YES`.
 
 We started using XCFrameworks from version 0.1.0, if you want to use that version or up, you need CocoaPod version 1.9.0 or higher.
 
-## Important Android notes
+### Important Android notes
 When using a custom trained model for object detection, add the following to your app's build.gradle file to ensure Gradle doesn’t compress the models when building the app:
 
-```
+```groovy
 android {
     aaptOptions {
         noCompress "tflite"
@@ -324,12 +322,12 @@ android {
 Note: You will need to add your own Klippa username and password to the `Podfile` and `build.gradle` to pull the dependencies correctly.
 You might also need to run `pod install` in example/ios/App/ folder.
 
-## About Klippa
+### About Klippa
 
 [Klippa](https://www.klippa.com/en) is a scale-up from [Groningen, The Netherlands](https://goo.gl/maps/CcCGaPTBz3u8noSd6) and was founded in 2015 by six Dutch IT specialists with the goal to digitize paper processes with modern technologies.
 
 We help clients enhance the effectiveness of their organization by using machine learning and OCR. Since 2015 more than a 1000 happy clients have been served with a variety of the software solutions that Klippa offers. Our passion is to help our clients to digitize paper processes by using smart apps, accounts payable software and data extraction by using OCR.
 
-## License
+### License
 
 The MIT License (MIT)
