@@ -1,9 +1,7 @@
-import { IonApp, IonButton, setupIonicReact, useIonAlert } from '@ionic/react';
+import { IonApp, IonButton, IonContent, IonHeader, IonToolbar, IonTitle, IonText, setupIonicReact } from '@ionic/react';
 
 import { KlippaScannerSDK } from "@klippa/capacitor-klippa-scanner-sdk"
 import { KlippaScannerConfig } from './klippa-config'
-
-
 
 /* Core CSS required for Ionic components to work properly */
 import '@ionic/react/css/core.css';
@@ -23,31 +21,58 @@ import '@ionic/react/css/display.css';
 
 /* Theme variables */
 import './theme/variables.css';
-import React from 'react';
+import React, { useState } from 'react';
 
 setupIonicReact();
 
 const App: React.FC = () => {
-    const [present] = useIonAlert();
-    return <IonApp>
-        <IonButton onClick={
-            () => {
-                KlippaScannerSDK.getCameraResult(KlippaScannerConfig).then((result) => {
-                    console.log(result);
+    const [scannerResult, setScannerResult] = useState<string>('Unknown');
 
-                    console.log(result.images.length);
-                    console.log(result.images);
+    const startSession = async () => {
+        let sessionResultText = 'Unknown';
+        
+        try {
+            const result = await KlippaScannerSDK.getCameraResult(KlippaScannerConfig);
+            sessionResultText = 'Finished';
+            console.log(result);
+        } catch (error: any) {
+            sessionResultText = 'Failed to start session: ' + (error.message || error.toString());
+        }
 
-                    present({
-                        header: 'Alert',
-                        message: `Took ${result.images.length} pictures`,
-                        buttons: ['Ok'],
-                    })
-                })
-            }}>
-            Start scanner
-        </IonButton>
-    </IonApp>
+        setScannerResult(sessionResultText);
+    };
+
+    return (
+        <IonApp>
+            <IonHeader>
+                <IonToolbar>
+                    <IonTitle>Plugin example app</IonTitle>
+                </IonToolbar>
+            </IonHeader>
+            <IonContent className="ion-padding">
+                <div style={{ 
+                    display: 'flex', 
+                    flexDirection: 'column', 
+                    justifyContent: 'center', 
+                    alignItems: 'center', 
+                    height: '100%',
+                    textAlign: 'center'
+                }}>
+                    <IonText>
+                        <p>Scanner result: {scannerResult}</p>
+                    </IonText>
+                    
+                    <IonButton 
+                        expand="block" 
+                        onClick={startSession}
+                        style={{ marginTop: '20px', width: '200px' }}
+                    >
+                        Start Session
+                    </IonButton>
+                </div>
+            </IonContent>
+        </IonApp>
+    );
 };
 
 export default App;

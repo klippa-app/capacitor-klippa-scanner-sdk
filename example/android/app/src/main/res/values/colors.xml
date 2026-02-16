@@ -1,11 +1,18 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <color name="klippa_scanner_sdk_color_Primary">#2dc36a</color>
-    <color name="klippa_scanner_sdk_color_PrimaryDark">#308D53</color>
-    <color name="klippa_scanner_sdk_color_Accent">#2dc36a</color>
-    <color name="klippa_scanner_sdk_color_Overlay">#2dc36a</color>
-    <color name="klippa_scanner_sdk_color_Warning">#BFFF0000</color>
-    <color name="klippa_scanner_sdk_color_IconDisabledColor">#80FFFFFF</color>
-    <color name="klippa_scanner_sdk_color_IconEnabledColor">#FFFFFFFF</color>
-    <color name="klippa_scanner_sdk_color_ReviewIconColor">#FFFFFFFF</color>
+    <color name="klippa_scanner_sdk_color_primary">#000000</color>
+    <color name="klippa_scanner_sdk_color_accent">#ffffff</color>
+    <color name="klippa_scanner_sdk_color_secondary">#2dc36a</color>
+    <color name="klippa_scanner_sdk_color_warning_background">#BF000000</color>
+    <color name="klippa_scanner_sdk_color_warning_text">#ffffff</color>
+    <color name="klippa_scanner_sdk_color_icon_disabled">#444</color>
+    <color name="klippa_scanner_sdk_color_icon_enabled">#ffffff</color>
+    <color name="klippa_scanner_sdk_color_button_with_icon_foreground">#ffffff</color>
+    <color name="klippa_scanner_sdk_color_button_with_icon_background">#444444</color>
+    <color name="klippa_scanner_sdk_color_primary_action_foreground">#ffffff</color>
+    <color name="klippa_scanner_sdk_color_primary_action_background">#2dc36a</color>
+    <color name="klippa_scanner_sdk_color_dialog_background">#ffffff</color>
+    <color name="klippa_scanner_sdk_color_dialog_text">#000000</color>
+    <color name="klippa_scanner_sdk_color_dialog_confirm_button">#d32f2f</color>
+    <color name="klippa_scanner_sdk_color_dialog_dismiss_button">#1976d2</color>
 </resources>

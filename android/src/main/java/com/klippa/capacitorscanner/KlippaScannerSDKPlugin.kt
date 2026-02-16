@@ -1,66 +1,58 @@
 package com.klippa.capacitorscanner
 
-import android.util.Size
+import androidx.activity.result.ActivityResult
 import com.getcapacitor.JSObject
 import com.getcapacitor.Plugin
 import com.getcapacitor.PluginCall
 import com.getcapacitor.PluginMethod
+import com.getcapacitor.annotation.ActivityCallback
 import com.getcapacitor.annotation.CapacitorPlugin
-import com.klippa.scanner.KlippaScannerBuilder
-import com.klippa.scanner.KlippaScannerListener
+import com.klippa.scanner.ScannerFinishedReason
+import com.klippa.scanner.ScannerSession
+import com.klippa.scanner.ScannerSession.Companion.KLIPPA_ERROR
+import com.klippa.scanner.ScannerSession.Companion.KLIPPA_RESULT
 import com.klippa.scanner.model.Instructions
 import com.klippa.scanner.model.KlippaCameraModes
+import com.klippa.scanner.model.KlippaDPI
 import com.klippa.scanner.model.KlippaDocumentMode
+import com.klippa.scanner.model.KlippaError
 import com.klippa.scanner.model.KlippaImageColor
 import com.klippa.scanner.model.KlippaMultipleDocumentMode
 import com.klippa.scanner.model.KlippaObjectDetectionModel
+import com.klippa.scanner.model.KlippaOutputFormat
+import com.klippa.scanner.model.KlippaPageFormat
 import com.klippa.scanner.model.KlippaScannerResult
 import com.klippa.scanner.model.KlippaSegmentedDocumentMode
 import com.klippa.scanner.model.KlippaSingleDocumentMode
+import com.klippa.scanner.model.KlippaSize
+import com.klippa.scanner.storage.KlippaStorage
 import org.json.JSONArray
 import org.json.JSONObject
 
 @CapacitorPlugin(name = "KlippaScannerSDKPlugin")
 class KlippaScannerSDKPlugin : Plugin() {
 
+    companion object {
+        private const val E_ACTIVITY_DOES_NOT_EXIST = "E_ACTIVITY_DOES_NOT_EXIST"
+        private const val E_MISSING_LICENSE = "E_MISSING_LICENSE"
+        private const val E_FAILED_TO_SHOW_SESSION = "E_FAILED_TO_SHOW_SESSION"
+        private const val E_CANCELED = "E_CANCELED"
+    }
+
     private var _call: PluginCall? = null
 
-    private var singleDocumentModeInstructionsDismissed = false
-    private var multiDocumentModeInstructionsDismissed = false
-    private var segmentedDocumentModeInstructionsDismissed = false
+    data object UnknownError: KlippaError {
+        private fun readResolve(): Any = UnknownError
+        override fun message(): String = "Unknown Error"
+    }
 
-    private val listener = object: KlippaScannerListener {
-
-        override fun klippaScannerDidCancel() {
-            _call?.reject("Scanner was canceled.", E_CANCELED)
-            _call = null
-        }
-
-        override fun klippaScannerDidFailWithException(exception: Exception) {
-            _call?.reject("Scanner was canceled with error: $exception", E_CANCELED)
-            _call = null
-        }
-
-        override fun klippaScannerDidFinishScanningWithResult(result: KlippaScannerResult) {
-
-            val images: MutableList<Map<String, String>> = mutableListOf()
-            for (image in result.images) {
-                val imageDict = mapOf("filePath" to image.filePath)
-                images.add(imageDict)
-            }
-            val imagesAsJSON = JSONArray(images)
-
-            val ret = JSObject()
-            ret.put("images", imagesAsJSON)
-            ret.put("crop", result.cropEnabled)
-            ret.put("timerEnabled", result.timerEnabled)
-            ret.put("color", result.defaultImageColor.name)
-            ret.put("singleDocumentModeInstructionsDismissed", singleDocumentModeInstructionsDismissed)
-            ret.put("multiDocumentModeInstructionsDismissed", multiDocumentModeInstructionsDismissed)
-            ret.put("segmentedDocumentModeInstructionsDismissed", segmentedDocumentModeInstructionsDismissed)
-
-            _call?.resolve(ret)
-            _call = null
+    @PluginMethod
+    fun purge(call: PluginCall) {
+        activity?.let { 
+            KlippaStorage.purge(it)
+            call.resolve()
+        } ?: run {
+            call.reject("Activity doesn't exist", E_ACTIVITY_DOES_NOT_EXIST)
         }
     }
 
@@ -73,284 +65,325 @@ class KlippaScannerSDKPlugin : Plugin() {
             return
         }
 
-        val builder = KlippaScannerBuilder(
-            listener = listener,
-            license = license
-        )
+        activity?.let { activity ->
+            try {
+                val scannerSession = ScannerSession(license)
 
-        setupImage(config, builder)
+                // Global options
+                config.getBooleanOrNull("defaultCrop")?.let {
+                    scannerSession.menu.isCropEnabled = it
+                }
 
-        setupModel(config, builder)
+                config.getIntOrNull("imageMaxWidth")?.let {
+                    scannerSession.imageAttributes.resolutionMaxWidth = it
+                }
 
-        setupTimer(config, builder)
+                config.getIntOrNull("imageMaxHeight")?.let {
+                    scannerSession.imageAttributes.resolutionMaxHeight = it
+                }
 
-        setupSuccess(config, builder)
+                config.getIntOrNull("imageMaxQuality")?.let {
+                    scannerSession.imageAttributes.outputQuality = it
+                }
 
-        setupShutterButton(config, builder)
+                config.getDoubleOrNull("previewDuration")?.let {
+                    scannerSession.durations.previewDuration = it
+                }
 
-        setupColors(config, builder)
+                // Model setup
+                config.getJsonObjectOrNull("model")?.let { model ->
+                    val fileName = model.getStringOrNull("fileName")
+                    val modelLabels = model.getStringOrNull("modelLabels")
 
-        setupMessages(config, builder)
+                    if (!fileName.isNullOrBlank() && !modelLabels.isNullOrBlank()) {
+                        val objectDetectionModel = KlippaObjectDetectionModel().apply {
+                            modelName = fileName
+                            this.modelLabels = modelLabels
+                        }
+                        scannerSession.objectDetectionModel = objectDetectionModel
+                    }
+                }
 
-        setupMenu(config, builder)
+                // Timer setup
+                config.getJsonObjectOrNull("timer")?.let { timer ->
+                    timer.getBooleanOrNull("allowed")?.let {
+                        scannerSession.menu.allowTimer = it
+                    }
+                    
+                    timer.getBooleanOrNull("enabled")?.let {
+                        scannerSession.menu.isTimerEnabled = it
+                    }
+                    
+                    timer.getDoubleOrNull("duration")?.let {
+                        scannerSession.durations.timerDuration = it
+                    }
+                }
 
-        setupCameraModes(config, builder)
+                // Crop padding setup
+                config.getJsonObjectOrNull("cropPadding")?.let { cropPadding ->
+                    val width = cropPadding.getIntOrNull("width") ?: 0
+                    val height = cropPadding.getIntOrNull("height") ?: 0
+                    scannerSession.imageAttributes.cropPadding = KlippaSize(width, height)
+                }
 
-        _call = call
-        builder.startScanner(context)
-    }
+                // Success setup
+                config.getJsonObjectOrNull("success")?.let { success ->
+                    success.getDoubleOrNull("previewDuration")?.let {
+                        scannerSession.durations.successPreviewDuration = it
+                    }
+                }
 
-    private fun setupColors(config: JSONObject, builder: KlippaScannerBuilder) {
-        config.getStringOrNull("defaultColor")?.let {
-            builder.colors.imageColorMode = when (it) {
-                "original" -> KlippaImageColor.ORIGINAL
-                "enhanced" -> KlippaImageColor.ENHANCED
-                "grayscale" -> KlippaImageColor.GRAYSCALE
-                else -> KlippaImageColor.ORIGINAL
+                // Shutter button setup
+                config.getJsonObjectOrNull("shutterButton")?.let { shutterButton ->
+                    shutterButton.getBooleanOrNull("allowShutterButton")?.let {
+                        scannerSession.shutterButton.allowShutterButton = it
+                    }
+                    
+                    shutterButton.getBooleanOrNull("hideShutterButton")?.let {
+                        scannerSession.shutterButton.hideShutterButton = it
+                    }
+                }
+
+                // Storage and output
+                config.getStringOrNull("storagePath")?.let {
+                    scannerSession.imageAttributes.outputDirectory = it
+                }
+
+                config.getStringOrNull("outputFilename")?.let {
+                    scannerSession.imageAttributes.outputFileName = it
+                }
+
+                // Default color
+                config.getStringOrNull("defaultColor")?.let {
+                    when (it) {
+                        "original" -> scannerSession.imageAttributes.imageColorMode = KlippaImageColor.ORIGINAL
+                        "enhanced" -> scannerSession.imageAttributes.imageColorMode = KlippaImageColor.ENHANCED
+                        "grayscale" -> scannerSession.imageAttributes.imageColorMode = KlippaImageColor.GRAYSCALE
+                        "blackAndWhite" -> scannerSession.imageAttributes.imageColorMode = KlippaImageColor.BLACK_AND_WHITE
+                    }
+                }
+
+                // Output format
+                config.getStringOrNull("outputFormat")?.let {
+                    when (it) {
+                        "jpeg" -> scannerSession.imageAttributes.outputFormat = KlippaOutputFormat.JPEG
+                        "pdfSingle" -> scannerSession.imageAttributes.outputFormat = KlippaOutputFormat.PDF_SINGLE
+                        "pdfMerged" -> scannerSession.imageAttributes.outputFormat = KlippaOutputFormat.PDF_MERGED
+                        "png" -> scannerSession.imageAttributes.outputFormat = KlippaOutputFormat.PNG
+                    }
+                }
+
+                config.getIntOrNull("imageLimit")?.let {
+                    scannerSession.imageAttributes.imageLimit = it
+                }
+
+                config.getIntOrNull("imageMovingSensitivityAndroid")?.let {
+                    scannerSession.imageAttributes.imageMovingSensitivity = it
+                }
+
+                config.getBooleanOrNull("performOnDeviceOCR")?.let {
+                    scannerSession.imageAttributes.performOnDeviceOCR = it
+                }
+
+                config.getBooleanOrNull("storeImagesToCameraRoll")?.let {
+                    scannerSession.imageAttributes.storeImagesToGallery = it
+                }
+
+                // Page format
+                config.getStringOrNull("pageFormat")?.let {
+                    when (it) {
+                        "off" -> scannerSession.imageAttributes.pageFormat = KlippaPageFormat.OFF
+                        "a3" -> scannerSession.imageAttributes.pageFormat = KlippaPageFormat.A3
+                        "a4" -> scannerSession.imageAttributes.pageFormat = KlippaPageFormat.A4
+                        "a5" -> scannerSession.imageAttributes.pageFormat = KlippaPageFormat.A5
+                        "a6" -> scannerSession.imageAttributes.pageFormat = KlippaPageFormat.A6
+                        "b4" -> scannerSession.imageAttributes.pageFormat = KlippaPageFormat.B4
+                        "b5" -> scannerSession.imageAttributes.pageFormat = KlippaPageFormat.B5
+                        "letter" -> scannerSession.imageAttributes.pageFormat = KlippaPageFormat.LETTER
+                    }
+                }
+
+                // DPI setting
+                config.getStringOrNull("dpi")?.let {
+                    when (it) {
+                        "auto" -> scannerSession.imageAttributes.dpi = KlippaDPI.AUTO
+                        "dpi200" -> scannerSession.imageAttributes.dpi = KlippaDPI.DPI_200
+                        "dpi300" -> scannerSession.imageAttributes.dpi = KlippaDPI.DPI_300
+                    }
+                }
+
+                // Brightness thresholds
+                config.getDoubleOrNull("brightnessLowerThreshold")?.let {
+                    scannerSession.imageAttributes.brightnessLowerThreshold = it
+                }
+
+                config.getDoubleOrNull("brightnessUpperThreshold")?.let {
+                    scannerSession.imageAttributes.brightnessUpperThreshold = it
+                }
+
+                // Menu options
+                config.getBooleanOrNull("shouldGoToReviewScreenWhenImageLimitReached")?.let {
+                    scannerSession.menu.shouldGoToReviewScreenWhenImageLimitReached = it
+                }
+
+                config.getBooleanOrNull("userShouldAcceptResultToContinue")?.let {
+                    scannerSession.menu.userShouldAcceptResultToContinue = it
+                }
+
+                config.getBooleanOrNull("userCanRotateImage")?.let {
+                    scannerSession.menu.userCanRotateImage = it
+                }
+
+                config.getBooleanOrNull("userCanCropManually")?.let {
+                    scannerSession.menu.userCanCropManually = it
+                }
+
+                config.getBooleanOrNull("userCanChangeColorSetting")?.let {
+                    scannerSession.menu.userCanChangeColorSetting = it
+                }
+
+                config.getBooleanOrNull("userCanPickMediaFromStorage")?.let {
+                    scannerSession.menu.userCanPickMediaFromStorage = it
+                }
+
+                config.getBooleanOrNull("shouldGoToReviewScreenOnFinishPressed")?.let {
+                    scannerSession.menu.shouldGoToReviewScreenOnFinishPressed = it
+                }
+
+                // Camera modes setup
+                setupCameraModes(config, scannerSession)
+
+                val intent = scannerSession.getIntent(activity)
+                _call = call
+                startActivityForResult(call, intent, "klippaScannerResult")
+
+            } catch (e: Exception) {
+                call.reject(
+                    "Could not launch scanner session: ${e.message}",
+                    E_FAILED_TO_SHOW_SESSION
+                )
             }
+        } ?: run {
+            call.reject("Activity doesn't exist", E_ACTIVITY_DOES_NOT_EXIST)
         }
     }
 
-    private fun setupMessages(config: JSONObject, builder: KlippaScannerBuilder) {
-        config.getStringOrNull("imageLimitReachedMessage")?.let {
-            builder.messages.imageLimitReached = it
-        }
+    private fun setupCameraModes(config: JSONObject, scannerSession: ScannerSession) {
+        val modes: MutableList<KlippaDocumentMode> = mutableListOf()
 
-        config.getStringOrNull("cancelConfirmationMessage")?.let {
-            builder.messages.cancelConfirmationMessage = it
-        }
-
-        config.getStringOrNull("orientationWarningMessage")?.let {
-            builder.messages.orientationWarningMessage = it
-        }
-
-        config.getStringOrNull("imageMovingMessage")?.let {
-            builder.messages.imageMovingMessage = it
-        }
-
-        config.getStringOrNull("moveCloserMessage")?.let {
-            builder.messages.moveCloserMessage = it
-        }
-
-        config.getStringOrNull("cancelAndDeleteImagesButtonText")?.let {
-            builder.buttonTexts.cancelAndDeleteImagesButtonText = it
-        }
-
-        config.getStringOrNull("cancelButtonText")?.let {
-            builder.buttonTexts.cancelButtonText = it
-        }
-
-        config.getStringOrNull("retakeButtonText")?.let {
-            builder.buttonTexts.retakeButtonText = it
-        }
-
-        config.getStringOrNull("deleteButtonText")?.let {
-            builder.buttonTexts.deleteButtonText = it
-        }
-    }
-
-    private fun setupImage(config: JSONObject, builder: KlippaScannerBuilder) {
-
-        config.getIntOrNull("imageMaxWidth")?.let {
-            builder.imageAttributes.resolutionMaxWidth = it
-        }
-
-        config.getIntOrNull("imageMaxHeight")?.let {
-            builder.imageAttributes.resolutionMaxHeight = it
-        }
-
-        config.getIntOrNull("imageMaxQuality")?.let {
-            builder.imageAttributes.outputQuality = it
-        }
-
-        config.getStringOrNull("outputFilename")?.let {
-            builder.imageAttributes.outputFileName = it
-        }
-
-        config.getIntOrNull("imageMovingSensitivityAndroid")?.let {
-            builder.imageAttributes.imageMovingSensitivity = it
-        }
-
-        config.getIntOrNull("imageLimit")?.let {
-            builder.imageAttributes.imageLimit = it
-        }
-
-        config.getJsonObjectOrNull("cropPadding")?.let { cropPadding ->
-            val width = cropPadding.getIntOrNull("width") ?: 0
-            val height = cropPadding.getIntOrNull("height") ?: 0
-            builder.imageAttributes.cropPadding = Size(width, height)
-        }
-
-        config.getStringOrNull("storagePath")?.let {
-            builder.imageAttributes.outputDirectory = it
-        }
-    }
-
-    private fun setupModel(config: JSONObject, builder: KlippaScannerBuilder) {
-        config.getJsonObjectOrNull("model")?.let { model ->
-            val modelName = model.getStringOrNull("fileName")
-            val modelLabels = model.getStringOrNull("fileName")
-
-            if (modelName.isNullOrBlank() || modelLabels.isNullOrBlank()) {
-                return
+        config.getJsonObjectOrNull("cameraModeSingle")?.let { cameraModeSingle ->
+            val singleDocumentMode = KlippaSingleDocumentMode()
+            cameraModeSingle.getStringOrNull("name")?.let { name ->
+                singleDocumentMode.name = name
             }
+            cameraModeSingle.getStringOrNull("message")?.let { message ->
+                singleDocumentMode.instructions = Instructions(singleDocumentMode.name, message)
+            }
+            modes.add(singleDocumentMode)
+        }
 
-            builder.objectDetectionModel = KlippaObjectDetectionModel(
-                modelName = modelName,
-                modelLabels = modelLabels
+        config.getJsonObjectOrNull("cameraModeMulti")?.let { cameraModeMulti ->
+            val multiDocumentMode = KlippaMultipleDocumentMode()
+            cameraModeMulti.getStringOrNull("name")?.let { name ->
+                multiDocumentMode.name = name
+            }
+            cameraModeMulti.getStringOrNull("message")?.let { message ->
+                multiDocumentMode.instructions = Instructions(multiDocumentMode.name, message)
+            }
+            modes.add(multiDocumentMode)
+        }
+
+        config.getJsonObjectOrNull("cameraModeSegmented")?.let { cameraModeSegmented ->
+            val segmentedDocumentMode = KlippaSegmentedDocumentMode()
+            cameraModeSegmented.getStringOrNull("name")?.let { name ->
+                segmentedDocumentMode.name = name
+            }
+            cameraModeSegmented.getStringOrNull("message")?.let { message ->
+                segmentedDocumentMode.instructions = Instructions(segmentedDocumentMode.name, message)
+            }
+            modes.add(segmentedDocumentMode)
+        }
+
+        if (modes.isNotEmpty()) {
+            var index = 0
+            config.getIntOrNull("startingIndex")?.let {
+                index = it
+            }
+            val cameraModes = KlippaCameraModes(
+                modes = modes,
+                startingIndex = index
             )
+            scannerSession.cameraModes = cameraModes
         }
     }
 
-    private fun setupTimer(config: JSONObject, builder: KlippaScannerBuilder) {
-        val timer = config.getJsonObjectOrNull("timer") ?: return
+    @Suppress("UNUSED")
+    @ActivityCallback
+    private fun klippaScannerResult(call: PluginCall, result: ActivityResult) {
+        val reason = ScannerFinishedReason.mapResultCode(result.resultCode)
 
-        timer.getBooleanOrNull("allowed")?.let {
-            builder.menu.allowTimer = it
-        }
+        val data = result.data
 
-        timer.getBooleanOrNull("enabled")?.let {
-            builder.menu.allowTimer = it
-        }
-
-        timer.getDoubleOrNull("duration")?.let {
-            builder.durations.timerDuration
-        }
-    }
-
-    private fun setupSuccess(config: JSONObject, builder: KlippaScannerBuilder) {
-        val success = config.getJsonObjectOrNull("success") ?: return
-
-        success.getDoubleOrNull("previewDuration")?.let {
-            builder.durations.successPreviewDuration = it
-        }
-
-        success.getStringOrNull("message")?.let {
-            builder.messages.successMessage = it
-        }
-
-        config.getDoubleOrNull("previewDuration")?.let {
-            builder.durations.previewDuration = it
-        }
-    }
-
-    private fun setupShutterButton(config: JSONObject, builder: KlippaScannerBuilder) {
-        val shutterButton = config.getJsonObjectOrNull("shutterButton") ?: return
-
-        shutterButton.getBooleanOrNull("allowShutterButton")?.let {
-            builder.shutterButton.allowShutterButton = it
-        }
-
-        shutterButton.getBooleanOrNull("hideShutterButton")?.let {
-            builder.shutterButton.hideShutterButton = it
-        }
-    }
-
-    private fun setupMenu(config: JSONObject, builder: KlippaScannerBuilder) {
-
-        config.getBooleanOrNull("shouldGoToReviewScreenWhenImageLimitReached")?.let {
-            builder.menu.shouldGoToReviewScreenWhenImageLimitReached = it
-        }
-
-        config.getBooleanOrNull("userCanRotateImage")?.let {
-            builder.menu.userCanRotateImage = it
-        }
-
-        config.getBooleanOrNull("userCanCropManually")?.let {
-            builder.menu.userCanCropManually = it
-        }
-
-        config.getBooleanOrNull("userCanChangeColorSetting")?.let {
-            builder.menu.userCanChangeColorSetting = it
-        }
-
-        config.getBooleanOrNull("defaultCrop")?.let {
-            builder.menu.isCropEnabled = it
-        }
-
-        config.getBooleanOrNull("storeImagesToCameraRoll")?.let {
-            builder.imageAttributes.storeImagesToGallery = it
-        }
-    }
-
-    private fun setupCameraModes(config: JSONObject, builder: KlippaScannerBuilder) {
-        val modes = mutableListOf<KlippaDocumentMode>()
-
-        config.getJsonObjectOrNull("cameraModeSingle")?.let { singleCameraMode ->
-            val single = KlippaSingleDocumentMode()
-
-            singleCameraMode.getStringOrNull("name")?.let {
-                single.name = it
+        when (reason) {
+            ScannerFinishedReason.FINISHED -> {
+                val result = data?.serializable<KlippaScannerResult>(KLIPPA_RESULT) ?: run {
+                    klippaScannerDidFailWithError(UnknownError)
+                    return
+                }
+                klippaScannerDidFinishScanningWithResult(result)
             }
-
-            singleCameraMode.getStringOrNull("message")?.let {
-                single.instructions = Instructions(
-                    message = it,
-                    dismissHandler = {
-                        singleDocumentModeInstructionsDismissed = true
-                    }
-                )
+            ScannerFinishedReason.ERROR -> {
+                val error = data?.serializable<KlippaError>(KLIPPA_ERROR) ?: run {
+                    klippaScannerDidFailWithError(UnknownError)
+                    return
+                }
+                klippaScannerDidFailWithError(error)
             }
-
-            modes.add(single)
+            ScannerFinishedReason.CANCELED -> {
+                klippaScannerDidCancel()
+            }
+            else -> klippaScannerDidFailWithError(UnknownError)
         }
-
-        config.getJsonObjectOrNull("cameraModeMulti")?.let { multiCameraMode ->
-            val multi = KlippaMultipleDocumentMode()
-
-            multiCameraMode.getStringOrNull("name")?.let {
-                multi.name = it
-            }
-
-            multiCameraMode.getStringOrNull("message")?.let {
-                multi.instructions = Instructions(
-                    message = it,
-                    dismissHandler = {
-                        multiDocumentModeInstructionsDismissed = true
-                    }
-                )
-            }
-
-            modes.add(multi)
-        }
-
-        config.getJsonObjectOrNull("cameraModeSegmented")?.let { segmentedCameraMode ->
-            val segmented = KlippaSegmentedDocumentMode()
-
-            segmentedCameraMode.getStringOrNull("name")?.let {
-                segmented.name = it
-            }
-
-            segmentedCameraMode.getStringOrNull("message")?.let {
-                segmented.instructions = Instructions(
-                    message = it,
-                    dismissHandler = {
-                        segmentedDocumentModeInstructionsDismissed = true
-                    }
-                )
-            }
-
-            modes.add(segmented)
-        }
-
-
-        if (modes.isEmpty()) {
-            return
-        }
-
-        val startingIndex = config.getIntOrNull("startingIndex") ?: 0
-
-        builder.cameraModes = KlippaCameraModes(
-            modes = modes,
-            startingIndex = startingIndex
-        )
 
     }
 
-    companion object {
-        const val E_MISSING_LICENSE = "E_MISSING_LICENSE"
-        const val E_CANCELED = "E_CANCELED"
+    private fun klippaScannerDidFinishScanningWithResult(result: KlippaScannerResult) {
+        val images: MutableList<Map<String, String>> = mutableListOf()
+
+        for (image in result.results) {
+            val imageDict = mapOf("filePath" to image.location)
+            images.add(imageDict)
+        }
+
+        val cropEnabled: Boolean = result.cropEnabled
+        val timerEnabled: Boolean = result.timerEnabled
+
+        val singleDocumentModeInstructionsDismissed = result.dismissedInstructions["SINGLE_DOCUMENT"] ?: false
+        val multiDocumentModeInstructionsDismissed = result.dismissedInstructions["MULTIPLE_DOCUMENT"] ?: false
+        val segmentedDocumentModeInstructionsDismissed = result.dismissedInstructions["SEGMENTED_DOCUMENT"] ?: false
+
+        val imagesAsJSON = JSONArray(images)
+
+        val ret = JSObject()
+        ret.put("images", imagesAsJSON)
+        ret.put("crop", cropEnabled)
+        ret.put("timerEnabled", timerEnabled)
+        ret.put("singleDocumentModeInstructionsDismissed", singleDocumentModeInstructionsDismissed)
+        ret.put("multiDocumentModeInstructionsDismissed", multiDocumentModeInstructionsDismissed)
+        ret.put("segmentedDocumentModeInstructionsDismissed", segmentedDocumentModeInstructionsDismissed)
+
+        _call?.resolve(ret)
+        _call = null
     }
 
+    private fun klippaScannerDidFailWithError(error: KlippaError) {
+        _call?.reject("Scanner canceled with error: ${error.message()}", E_CANCELED)
+        _call = null
+    }
+
+    private fun klippaScannerDidCancel() {
+        _call?.reject("Scanner was canceled", E_CANCELED)
+        _call = null
+    }
 
 }
