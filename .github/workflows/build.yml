@@ -1,0 +1,91 @@
+name: Build CI
+
+on:
+  push:
+  # Allows to run this workflow manually from the Actions tab
+  workflow_dispatch:
+
+jobs:
+  build:
+    name: Test on ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22.x'
+          cache: 'npm'
+      - uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '21.x'
+      - run: npm ci
+      - run: npm run build
+      - run: |
+          cd ./example
+          npm ci
+          npm run build
+          npx cap sync android
+          cd android
+          ./gradlew assembleDebug
+        env:
+          KLIPPA_SCANNER_SDK_URL: ${{ secrets.KLIPPA_SCANNER_SDK_URL_ANDROID }}
+          KLIPPA_SCANNER_SDK_USERNAME: ${{ secrets.KLIPPA_SCANNER_SDK_USERNAME }}
+          KLIPPA_SCANNER_SDK_PASSWORD: ${{ secrets.KLIPPA_SCANNER_SDK_PASSWORD }}
+
+  build-macos-android:
+    name: Test Android on macOS
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22.x'
+          cache: 'npm'
+      - uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '21.x'
+      - run: npm ci
+      - run: npm run build
+      - run: |
+          cd ./example
+          npm ci
+          npm run build
+          npx cap sync android
+          cd android
+          ./gradlew assembleDebug
+        env:
+          KLIPPA_SCANNER_SDK_URL: ${{ secrets.KLIPPA_SCANNER_SDK_URL_ANDROID }}
+          KLIPPA_SCANNER_SDK_USERNAME: ${{ secrets.KLIPPA_SCANNER_SDK_USERNAME }}
+          KLIPPA_SCANNER_SDK_PASSWORD: ${{ secrets.KLIPPA_SCANNER_SDK_PASSWORD }}
+
+  build-macos-ios:
+    name: Test iOS on macOS
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22.x'
+          cache: 'npm'
+      - uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '21.x'
+      - run: npm ci
+      - run: npm run build
+      - run: |
+          cd ./example
+          npm ci
+          npm run build
+          npx cap sync ios
+          cd ios/App
+          xcodebuild -workspace App.xcworkspace -scheme App -sdk iphonesimulator -configuration Debug build
+        env:
+          KLIPPA_SCANNER_SDK_URL: ${{ secrets.KLIPPA_SCANNER_SDK_URL_IOS }}
+          KLIPPA_SCANNER_SDK_USERNAME: ${{ secrets.KLIPPA_SCANNER_SDK_USERNAME }}
+          KLIPPA_SCANNER_SDK_PASSWORD: ${{ secrets.KLIPPA_SCANNER_SDK_PASSWORD }}

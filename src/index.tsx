@@ -2,9 +2,9 @@ import { registerPlugin } from '@capacitor/core'
 
 export interface ModelOptions {
     // The name of the model file when using custom object detection.
-    name: string
+    fileName: string
     // The name of the label file when using custom object detection.
-    labelsName: string
+    modelLabels: string
 }
 
 export interface TimerOptions {
@@ -42,6 +42,8 @@ export interface DocumentMode {
     name?: string
     // Instructions show to user, if null is passed no instructions will be shown.
     message?: string
+    // The image that is shown in the instructions (iOS only).
+    image?: string
 }
 
 export interface CameraConfig {
@@ -58,9 +60,6 @@ export interface CameraConfig {
 
     // The warning message when the camera preview has to much motion to be able to automatically take a photo.
     imageMovingMessage?: string
-
-    // The warning message when the camera turned out of portrait mode.
-    orientationWarningMessage?: string
 
     // Define the max resolution of the output file. It’s possible to set only one of these values.
     // We will make sure the picture fits in the given resolution. We will also keep the aspect ratio of the image.
@@ -114,8 +113,35 @@ export interface CameraConfig {
     // Whether the camera automatically saves the images to the camera roll (iOS) / gallery (Android). Default true.
     storeImagesToCameraRoll?: boolean
 
-    // What the default color conversion will be (original, grayscale, enhanced).
-    defaultColor?: 'original' | 'grayscale' | 'enhanced'
+    // What the default color conversion will be (original, grayscale, enhanced, blackAndWhite).
+    defaultColor?: 'original' | 'grayscale' | 'enhanced' | 'blackAndWhite'
+
+    // The output format (jpeg, pdfSingle, pdfMerged, png). Default is jpeg.
+    outputFormat?: 'jpeg' | 'pdfSingle' | 'pdfMerged' | 'png'
+
+    // Set the output resolution, uses the DPI to calculate the resolution. Default is off.
+    pageFormat?: 'off' | 'a3' | 'a4' | 'a5' | 'a6' | 'b4' | 'b5' | 'letter'
+
+    // The DPI which is used to calculate the PageFormat resolution.
+    dpi?: 'auto' | 'dpi200' | 'dpi300'
+
+    // Whether to perform on-device OCR after scanning completes.
+    performOnDeviceOCR?: boolean
+
+    // The lower threshold before the warning message informs the environment is too dark (default 0).
+    brightnessLowerThreshold?: number
+
+    // The upper threshold before the warning message informs the environment is too bright (default 6).
+    brightnessUpperThreshold?: number
+
+    // Whether the user must confirm the taken photo before the SDK continues (default false).
+    userShouldAcceptResultToContinue?: boolean
+
+    // Whether to allow users to select media from their device (shows a media button bottom left on the scanner screen).
+    userCanPickMediaFromStorage?: boolean
+
+    // Whether the next button in the bottom right of the scanner screen goes to the review screen instead of finishing the session.
+    shouldGoToReviewScreenOnFinishPressed?: boolean
 
     // The camera mode for scanning single documents.
     cameraModeSingle?: DocumentMode;
@@ -160,11 +186,50 @@ export interface CameraConfig {
     // The text inside of the color selection alert dialog button named enhanced.
     imageColorEnhancedText?: string
 
+    // The text inside of the color selection alert dialog button named black and white.
+    imageColorBlackAndWhiteText?: string
+
+    // The text above the shutter button to indicate whether auto capture is enabled or not.
+    autoCaptureButtonText?: string
+
+    // The text above the shutter button to indicate whether manual capture is enabled or not.
+    manualButtonText?: string
+
+    // The text inside of the delete options alert dialog.
+    deleteOptionsButtonText?: string
+
+    // The text to finish the scanner on the edit screen.
+    continueButtonText?: string
+
+    // The text below the crop button in the review screen.
+    cropEditButtonText?: string
+
+    // The text below the filter button in the review screen.
+    filterEditButtonText?: string
+
+    // The text below the rotate button in the review screen.
+    rotateEditButtonText?: string
+
+    // The text below the delete button in the review screen.
+    deleteEditButtonText?: string
+
+    // The text below the cancel button in the crop screen.
+    cancelCropButtonText?: string
+
+    // The text below the expand button in the crop screen.
+    expandCropButtonText?: string
+
+    // The text below the save button in the crop screen.
+    saveCropButtonText?: string
+
     // The text inside of the cancel alert button.
     cancelAndDeleteImagesButtonText?: string
 
     // The text inside of the alert to confirm exiting the scanner.
     cancelConfirmationMessage?: string
+
+    // The text at the top to indicate the picture count on segmented camera mode.
+    segmentedModeImageCountMessage?: string
 
     // The warning message when the camera result is too bright.
     imageTooBrightMessage?: string
@@ -180,8 +245,8 @@ export interface CameraConfig {
     // The accent color of the interface, should be a hex RGB color string.
     accentColor?: string
 
-    // The overlay color (when using document detection), should be a hex RGB color string.
-    overlayColor?: string
+    // The secondary color of the interface, should be a hex RGB color string.
+    secondaryColor?: string
 
     // The color of the background of the warning message, should be a hex RGB color string.
     warningBackgroundColor?: string
@@ -199,7 +264,16 @@ export interface CameraConfig {
     iconDisabledColor?: string
 
     // The color of the menu icons of the screen where you can review/edit the images, should be a hex RGB color string.
-    reviewIconColor?: string
+    buttonWithIconForegroundColor?: string
+
+    // The color of the menu icons of the screen where you can review/edit the images, should be a hex RGB color string.
+    buttonWithIconBackgroundColor?: string
+
+    // The foreground color of the primary action buttons.
+    primaryActionForegroundColor?: string
+
+    // The background color of the primary action buttons.
+    primaryActionBackgroundColor?: string
 
     // Whether the camera has a view finder overlay (a helper grid so the user knows where the document should be), should be a Boolean.
     isViewFinderEnabled?: boolean
@@ -222,7 +296,16 @@ export interface CameraResult {
     crop?: boolean
 
     // What color option was used, so you can save it as default.
-    color?: 'original' | 'grayscale' | 'enhanced';
+    color?: 'original' | 'grayscale' | 'enhanced' | 'blackAndWhite'
+
+    // Whether the single document mode instructions were dismissed.
+    singleDocumentModeInstructionsDismissed?: boolean
+
+    // Whether the multi document mode instructions were dismissed.
+    multiDocumentModeInstructionsDismissed?: boolean
+
+    // Whether the segmented document mode instructions were dismissed.
+    segmentedDocumentModeInstructionsDismissed?: boolean
 }
 
 export interface CameraResultImage {
@@ -232,6 +315,7 @@ export interface CameraResultImage {
 
 export interface KlippaScannerSDKPlugin {
     getCameraResult(config: CameraConfig): Promise<CameraResult>
+    purge(): Promise<void>
 }
 
 const KlippaScannerSDK = registerPlugin<KlippaScannerSDKPlugin>('KlippaScannerSDKPlugin')

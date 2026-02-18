@@ -1,53 +1,40 @@
-import { IonApp, IonButton, setupIonicReact, useIonAlert } from '@ionic/react';
-
+import React, { useState } from 'react';
 import { KlippaScannerSDK } from "@klippa/capacitor-klippa-scanner-sdk"
 import { KlippaScannerConfig } from './klippa-config'
 
-
-
-/* Core CSS required for Ionic components to work properly */
-import '@ionic/react/css/core.css';
-
-/* Basic CSS for apps built with Ionic */
-import '@ionic/react/css/normalize.css';
-import '@ionic/react/css/structure.css';
-import '@ionic/react/css/typography.css';
-
-/* Optional CSS utils that can be commented out */
-import '@ionic/react/css/padding.css';
-import '@ionic/react/css/float-elements.css';
-import '@ionic/react/css/text-alignment.css';
-import '@ionic/react/css/text-transformation.css';
-import '@ionic/react/css/flex-utils.css';
-import '@ionic/react/css/display.css';
-
-/* Theme variables */
-import './theme/variables.css';
-import React from 'react';
-
-setupIonicReact();
-
 const App: React.FC = () => {
-    const [present] = useIonAlert();
-    return <IonApp>
-        <IonButton onClick={
-            () => {
-                KlippaScannerSDK.getCameraResult(KlippaScannerConfig).then((result) => {
-                    console.log(result);
+    const [scannerResult, setScannerResult] = useState<string>('');
 
-                    console.log(result.images.length);
-                    console.log(result.images);
+    const startSession = async () => {
+        let sessionResultText = '';
+        
+        try {
+            const result = await KlippaScannerSDK.getCameraResult(KlippaScannerConfig);
+            sessionResultText = `Scan completed! ${result.images.length} image(s) captured`;
+            console.log(result);
+        } catch (error: any) {
+            sessionResultText = 'Failed: ' + (error.message || error.toString());
+        }
 
-                    present({
-                        header: 'Alert',
-                        message: `Took ${result.images.length} pictures`,
-                        buttons: ['Ok'],
-                    })
-                })
-            }}>
-            Start scanner
-        </IonButton>
-    </IonApp>
+        setScannerResult(sessionResultText);
+    };
+
+    return (
+        <div>
+            <h1>Klippa Scanner SDK Example</h1>
+            
+            <button onClick={startSession}>
+                Start Scanning
+            </button>
+            
+            {scannerResult && (
+                <div>
+                    <h3>Result:</h3>
+                    <p>{scannerResult}</p>
+                </div>
+            )}
+        </div>
+    );
 };
 
 export default App;
